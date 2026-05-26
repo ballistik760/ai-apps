@@ -8,17 +8,23 @@
         body { font-family: system-ui, -apple-system, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
-        .header-panel { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .header-panel { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         h1 { margin: 0; font-size: 1.5em; color: #1a365d; }
         
-        .controls { display: flex; gap: 20px; align-items: center; background: #e2e8f0; padding: 15px 20px; border-radius: 8px; }
+        .controls { display: flex; gap: 15px; align-items: center; background: #e2e8f0; padding: 10px 15px; border-radius: 8px; flex-wrap: wrap; }
         .input-group { display: flex; align-items: center; gap: 10px; font-weight: bold; }
         .input-group input { padding: 8px; width: 60px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1em; }
         
         .status { font-size: 1.2em; font-weight: bold; padding: 8px 15px; border-radius: 6px; background: #c6f6d5; color: #22543d; }
         .status.zero { background: #fed7d7; color: #822727; }
 
-        .legend { display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.9em; justify-content: center; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .btn-clear { background-color: #cbd5e1; color: #334155; }
+        .btn-clear:hover { background-color: #94a3b8; }
+        .btn-print { background-color: #2563eb; color: white; }
+        .btn-print:hover { background-color: #1d4ed8; }
+
+        .legend { display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.9em; justify-content: center; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
         .box { width: 15px; height: 15px; border-radius: 3px; border: 1px solid #ccc; }
         .box.available { background: white; }
@@ -43,9 +49,27 @@
         .day.selected { background-color: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
 
         .summary-panel { background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .summary-panel h2 { margin-top: 0; font-size: 1.2em; color: #2d3748; }
+        .summary-panel h2 { margin-top: 0; font-size: 1.2em; color: #2d3748; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Official Print Header (Hidden normally) */
+        .print-header { display: none; margin-bottom: 30px; }
+        .print-header .signature-line { margin-top: 50px; border-top: 1px solid #000; width: 300px; padding-top: 5px; font-size: 0.9em; }
+
         #selected-dates-list { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; padding: 0; margin: 0; }
-        #selected-dates-list li { background: #ebf4ff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 5px 12px; border-radius: 15px; font-size: 0.9em; }
+        #selected-dates-list li { background: #ebf4ff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 8px 15px; border-radius: 6px; font-size: 0.95em; font-weight: 500; }
+
+        /* Print Specific Styles */
+        @media print {
+            body { background: white; padding: 0; color: black; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; }
+            /* Hide the interactive parts */
+            .controls, .legend, .calendar-grid, button { display: none !important; }
+            /* Show the official document header */
+            .print-header { display: block; }
+            .summary-panel { border: none; background: transparent; padding: 0; }
+            #selected-dates-list { flex-direction: column; gap: 5px; }
+            #selected-dates-list li { border: none; background: transparent; padding: 5px 0; border-bottom: 1px solid #ccc; border-radius: 0; color: black; }
+        }
     </style>
 </head>
 <body>
@@ -55,10 +79,11 @@
         <h1>🗓️ Vacation Planner (2026-2027 Fiscal Year)</h1>
         <div class="controls">
             <div class="input-group">
-                <label for="total-days">Total Vacation Days:</label>
+                <label for="total-days">Total Days:</label>
                 <input type="number" id="total-days" value="15" min="0" onchange="updateCounter()">
             </div>
             <div id="status-badge" class="status">Remaining: <span id="remaining-days">15</span></div>
+            <button class="btn-clear" onclick="clearAll()">🔄 Clear All</button>
         </div>
     </div>
 
@@ -73,41 +98,40 @@
         </div>
 
     <div class="summary-panel">
-        <h2>Selected Vacation Dates</h2>
+        
+        <div class="print-header">
+            <h2>Official Vacation Request Form</h2>
+            <p><strong>Employee Name:</strong> ___________________________</p>
+            <p><strong>Fiscal Year:</strong> 2026-2027</p>
+            <hr>
+        </div>
+
+        <h2>
+            Selected Vacation Dates
+            <button class="btn-print" onclick="printSummary()">🖨️ Print / Save as PDF</button>
+        </h2>
+        
         <ul id="selected-dates-list">
             <li style="background: none; border: none; color: #718096;">No days selected yet.</li>
         </ul>
+
+        <div class="print-header">
+            <div class="signature-line">Supervisor Signature & Date</div>
+        </div>
     </div>
 </div>
 
 <script>
-    // ICOE Blocked Holidays based on 2026-2027 Calendar Document
     const holidays = [
-        '2026-07-03', // Independence Day Obs
-        '2026-09-07', // Labor Day
-        '2026-11-11', // Veteran's Day
-        '2026-11-26', // Thanksgiving
-        '2026-11-27', // Admission's Day Lieu
-        '2026-12-24', // Christmas Eve
-        '2026-12-25', // Christmas Day
-        '2026-12-28', // Winter Break Office Closure
-        '2026-12-29', // Winter Break Office Closure
-        '2026-12-30', // Winter Break Office Closure
-        '2026-12-31', // New Year's Eve
-        '2027-01-01', // New Year's Day
-        '2027-01-18', // MLK Jr. Day
-        '2027-02-08', // Lincoln's Birthday
-        '2027-02-15', // President's Day
-        '2027-03-26', // Spring Holiday
-        '2027-03-29', // Spring Holiday
-        '2027-05-31', // Memorial Day
-        '2027-06-18'  // Juneteenth
+        '2026-07-03', '2026-09-07', '2026-11-11', '2026-11-26', '2026-11-27', 
+        '2026-12-24', '2026-12-25', '2026-12-28', '2026-12-29', '2026-12-30', 
+        '2026-12-31', '2027-01-01', '2027-01-18', '2027-02-08', '2027-02-15', 
+        '2027-03-26', '2027-03-29', '2027-05-31', '2027-06-18'
     ];
 
     const selectedDates = new Set();
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
-    // Format date as YYYY-MM-DD
     function formatDateString(year, monthIndex, day) {
         const y = year;
         const m = String(monthIndex + 1).padStart(2, '0');
@@ -115,19 +139,19 @@
         return `${y}-${m}-${d}`;
     }
 
-    // Format for human reading
     function formatPrettyDate(dateString) {
         const [y, m, d] = dateString.split('-');
-        return `${monthNames[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+        const dateObj = new Date(y, parseInt(m)-1, d);
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return `${days[dateObj.getDay()]}, ${monthNames[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
     }
 
     function renderCalendar() {
         const container = document.getElementById('calendar-container');
         container.innerHTML = '';
 
-        // Start July (month index 6) 2026
         let currentYear = 2026;
-        let startMonthIndex = 6; 
+        let startMonthIndex = 6; // July
 
         for (let i = 0; i < 12; i++) {
             let mIndex = (startMonthIndex + i) % 12;
@@ -136,10 +160,8 @@
             const monthCard = document.createElement('div');
             monthCard.className = 'month-card';
             
-            // Month Header
             monthCard.innerHTML = `<div class="month-title">${monthNames[mIndex]} ${y}</div>`;
             
-            // Days of week header
             const daysHeader = document.createElement('div');
             daysHeader.className = 'days-header';
             ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
@@ -147,23 +169,18 @@
             });
             monthCard.appendChild(daysHeader);
 
-            // Days Grid
             const daysGrid = document.createElement('div');
             daysGrid.className = 'days-grid';
 
-            // Get first day of month (0 = Sunday, 1 = Monday...)
             const firstDay = new Date(y, mIndex, 1).getDay();
-            // Get total days in month
             const daysInMonth = new Date(y, mIndex + 1, 0).getDate();
 
-            // Pad beginning
             for (let pad = 0; pad < firstDay; pad++) {
                 const emptyDiv = document.createElement('div');
                 emptyDiv.className = 'day empty';
                 daysGrid.appendChild(emptyDiv);
             }
 
-            // Fill days
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.innerText = day;
@@ -171,7 +188,6 @@
                 const dateString = formatDateString(y, mIndex, day);
                 const dayOfWeek = new Date(y, mIndex, day).getDay();
                 
-                // Determine CSS Classes
                 if (dayOfWeek === 0 || dayOfWeek === 6) {
                     dayDiv.className = 'day disabled weekend';
                     dayDiv.title = 'Weekend';
@@ -186,7 +202,6 @@
 
                 daysGrid.appendChild(dayDiv);
             }
-
             monthCard.appendChild(daysGrid);
             container.appendChild(monthCard);
         }
@@ -197,11 +212,9 @@
         const total = parseInt(totalInput) || 0;
         
         if (selectedDates.has(dateString)) {
-            // Deselect
             selectedDates.delete(dateString);
             element.classList.remove('selected');
         } else {
-            // Select (if we have days left)
             if (selectedDates.size < total) {
                 selectedDates.add(dateString);
                 element.classList.add('selected');
@@ -225,10 +238,6 @@
         
         if (remaining <= 0) {
             badge.classList.add('zero');
-            // If user lowered input below current selection, we should handle that gracefully
-            if (remaining < 0) {
-                alert('Warning: You have selected more days than your total available balance.');
-            }
         } else {
             badge.classList.remove('zero');
         }
@@ -245,14 +254,37 @@
             return;
         }
 
-        // Sort dates chronologically
         const sortedDates = Array.from(selectedDates).sort();
         
-        sortedDates.forEach(dateStr => {
+        sortedDates.forEach((dateStr, index) => {
             const li = document.createElement('li');
-            li.innerText = formatPrettyDate(dateStr);
+            // Adding an index number and full day formatting for the printout
+            li.innerText = `${index + 1}. ${formatPrettyDate(dateStr)}`;
             ul.appendChild(li);
         });
+    }
+
+    function clearAll() {
+        if(confirm("Are you sure you want to clear all selected vacation dates?")) {
+            selectedDates.clear();
+            
+            // Remove the selected visual class from all calendar days
+            const activeDays = document.querySelectorAll('.day.selected');
+            activeDays.forEach(day => {
+                day.classList.remove('selected');
+            });
+            
+            updateCounter();
+        }
+    }
+
+    function printSummary() {
+        if (selectedDates.size === 0) {
+            alert('Please select at least one vacation day before printing.');
+            return;
+        }
+        // Triggers the browser's native print/save as PDF dialog
+        window.print();
     }
 
     // Initialize
